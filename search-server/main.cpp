@@ -60,10 +60,10 @@ public:
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         double n = 0;
-        
+        double words_size = words.size();
+
         for (string word : words) {
-            n = count(words.begin(), words.end(), word);
-            n /= words.size();
+            n = count(words.begin(), words.end(), word) / words_size;
             word_to_document_freqs_[word].insert({ document_id,n });
         }
         document_count_++;
@@ -137,6 +137,10 @@ private:
         }
         return query;
     }
+
+    double IDF(int word_occurence) const {
+        return log(double(document_count_) / word_occurence);
+    }
  
     vector<Document> FindAllDocuments(const Query& query) const {
         map<int, double> document_to_relevance;
@@ -151,7 +155,7 @@ private:
                 auto docs = word_to_document_freqs_.at(word);
                 int word_occurence = docs.size();
                 for (const auto& i : docs) {
-                    document_to_relevance[i.first] += i.second * log(double(document_count_) / word_occurence);
+                    document_to_relevance[i.first] += double(i.second) * IDF(word_occurence);
                 }
             }
         }
