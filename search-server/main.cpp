@@ -136,7 +136,7 @@ private:
         return query;
     }
 
-    double calculate_IDF(int word_occurence) const {
+    double CalculateIDF(int word_occurence) const {
         return log(double(document_count_) / word_occurence);
     }
  
@@ -153,7 +153,7 @@ private:
                 auto docs = word_to_document_freqs_.at(word);
                 int word_occurence = docs.size();
                 for (const auto& i : docs) {
-                    document_to_relevance[i.first] += double(i.second) * calculate_IDF(word_occurence);
+                    document_to_relevance[i.first] += double(i.second) * CalculateIDF(word_occurence);
                 }
             }
         }
