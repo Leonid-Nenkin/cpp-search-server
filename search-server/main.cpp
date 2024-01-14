@@ -101,7 +101,7 @@ public:
                      const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
 
-        if (auto search = documents_.find(document_id); search != documents_.end()) {
+        if (documents_.count(document_id)) {
             throw invalid_argument("document with such id already exists"s);
         }
         
@@ -208,7 +208,7 @@ public:
         if ((index<0) || (index>=GetDocumentCount())) {
             throw out_of_range("index is out of range");
         }
-        return added_documents_order_[index];   
+        return added_documents_order_.at(index);   
     }
     
 private:
@@ -254,22 +254,27 @@ private:
         bool is_stop;
     };
 
-    QueryWord ParseQueryWord(string text) const {
+    QueryWord ParseQueryWord(const string& text) const {
         bool is_minus = false;
-        // Word shouldn't be empty
+        string new_text = text;
+
         if (text[0] == '-') {
             is_minus = true;
-            text = text.substr(1);
+            new_text = text.substr(1);
+
+            if (!isValidWord(new_text)) {
+                throw invalid_argument("invalid chars in words"s);
+            }
             
-            if (text == "") {
+            if (new_text == "") {
                 throw invalid_argument("minus words couldn't be empty"s);
             }
             
-            if (text[0] == '-') {
+            if (new_text[0] == '-') {
                 throw invalid_argument("invalid chars in minus words"s);
             }
         }
-        return {text, is_minus, IsStopWord(text)};
+        return {new_text, is_minus, IsStopWord(text)};
     }
 
     struct Query {
