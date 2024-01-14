@@ -6,10 +6,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <numeric>
 
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const double ALLOWED_ERROR = 1e-6;
 
 string ReadLine() {
     string s;
@@ -78,7 +80,6 @@ enum class DocumentStatus {
 
 class SearchServer {
 public:
-    inline static constexpr int INVALID_DOCUMENT_ID = -1;
     
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
@@ -94,24 +95,12 @@ public:
         : SearchServer(
             SplitIntoWords(stop_words_text))
     {
-        for (const string& word : stop_words_) {
-            if (!isValidWord(word)) {
-                throw invalid_argument("invalid chars in words"s);
-            }
-        }
-
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                      const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        
-        for (const string& word : words) {
-            if (!isValidWord(word)) {
-                throw invalid_argument("invalid chars in words"s);
-            }
-        }
-        
+
         if (auto search = documents_.find(document_id); search != documents_.end()) {
             throw invalid_argument("document with such id already exists"s);
         }
@@ -125,6 +114,7 @@ public:
         for (const string& word : words) {
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
+        added_documents_order_.insert(added_documents_order_.end(), document_id);
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     }
     
@@ -140,22 +130,10 @@ public:
         
         const Query query = ParseQuery(raw_query);
         
-        for (string minus_word : query.minus_words) {
-            if (minus_word[0] == '-') {
-                throw invalid_argument("invalid chars in minus words"s);
-            }
-        }
-        
-        for (string minus_word : query.minus_words) {
-            if (minus_word == "") {
-                throw invalid_argument("minus words couldn't be empty"s);
-            }
-        }
-
         auto matched_documents = FindAllDocuments(query, document_predicate);
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < ALLOWED_ERROR) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -227,21 +205,10 @@ public:
     }
     
     int GetDocumentId(int index) const {
-        int doc_id = 0;
-        int iterator = 0;
-
         if ((index<0) || (index>=GetDocumentCount())) {
             throw out_of_range("index is out of range");
         }
-        
-        for (const auto& [key, value]: documents_) {
-            if (iterator == index) {
-                doc_id = key;
-            }
-            iterator++;
-        }
-        return doc_id;
-        
+        return added_documents_order_[index];   
     }
     
 private:
@@ -252,6 +219,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> added_documents_order_;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -260,6 +228,10 @@ private:
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
+            if (!isValidWord(word)) {
+                throw invalid_argument("invalid chars in words"s);
+            }
+
             if (!IsStopWord(word)) {
                 words.push_back(word);
             }
@@ -271,10 +243,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+
+        int rating_sum = std::accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -290,6 +260,14 @@ private:
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
+            
+            if (text == "") {
+                throw invalid_argument("minus words couldn't be empty"s);
+            }
+            
+            if (text[0] == '-') {
+                throw invalid_argument("invalid chars in minus words"s);
+            }
         }
         return {text, is_minus, IsStopWord(text)};
     }
