@@ -85,7 +85,7 @@ public:
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
         for (const string& word : stop_words_) {
-            if (!isValidWord(word)) {
+            if (!IsValidWord(word)) {
                 throw invalid_argument("invalid chars in words"s);
             }
         }    
@@ -97,8 +97,7 @@ public:
     {
     }
 
-    void AddDocument(int document_id, const string& document, DocumentStatus status,
-                     const vector<int>& ratings) {
+    void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
 
         if (documents_.count(document_id)) {
@@ -120,14 +119,7 @@ public:
     
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query,
-                                      DocumentPredicate document_predicate) const {
-        
-        for (const string& word : SplitIntoWords(raw_query)) {
-            if (!isValidWord(word)) {
-                throw invalid_argument("invalid chars in words"s);
-            }
-        }
-        
+                                      DocumentPredicate document_predicate) const {        
         const Query query = ParseQuery(raw_query);
         
         auto matched_documents = FindAllDocuments(query, document_predicate);
@@ -161,27 +153,7 @@ public:
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-
-        for (const string& word : SplitIntoWords(raw_query)) {
-            if (!isValidWord(word)) {
-                throw invalid_argument("invalid chars in words"s);
-            }
-        }
-        
         const Query query = ParseQuery(raw_query);
-        for (string minus_word : query.minus_words) {
-            if (minus_word[0] == '-') {
-                throw invalid_argument("invalid chars in minus words"s);
-            }
-        }
-        
-        for (string minus_word : query.minus_words) {
-            if (minus_word == "") {
-                throw invalid_argument("minus words couldn't be empty"s);
-            }
-        }
-
-
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -228,7 +200,7 @@ private:
     vector<string> SplitIntoWordsNoStop(const string& text) const {
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
-            if (!isValidWord(word)) {
+            if (!IsValidWord(word)) {
                 throw invalid_argument("invalid chars in words"s);
             }
 
@@ -262,7 +234,7 @@ private:
             is_minus = true;
             new_text = text.substr(1);
 
-            if (!isValidWord(new_text)) {
+            if (!IsValidWord(new_text)) {
                 throw invalid_argument("invalid chars in words"s);
             }
             
@@ -297,7 +269,7 @@ private:
         return query;
     }
 
-    static bool isValidWord(const string& word) {
+    static bool IsValidWord(const string& word) {
         return none_of(word.begin(), word.end(), [](char c) {
             return c >= '\0' && c < ' ';
         });
