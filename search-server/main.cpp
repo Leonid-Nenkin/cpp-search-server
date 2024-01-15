@@ -233,19 +233,20 @@ private:
         if (text[0] == '-') {
             is_minus = true;
             new_text = text.substr(1);
-
-            if (!IsValidWord(new_text)) {
-                throw invalid_argument("invalid chars in words"s);
-            }
-            
-            if (new_text == "") {
-                throw invalid_argument("minus words couldn't be empty"s);
-            }
-            
-            if (new_text[0] == '-') {
-                throw invalid_argument("invalid chars in minus words"s);
-            }
         }
+
+        if (!IsValidWord(new_text)) {
+            throw invalid_argument("invalid chars in words"s);
+        }
+        
+        if (new_text == "") {
+            throw invalid_argument("minus words couldn't be empty"s);
+        }
+        
+        if (new_text[0] == '-') {
+            throw invalid_argument("invalid chars in minus words"s);
+        }
+
         return {new_text, is_minus, IsStopWord(text)};
     }
 
