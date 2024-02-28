@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "lldb",
+      "request": "launch",
+      "args": [],
+      "cwd": "/Users/leonid-nenkin/Desktop/dev/С++/cpp-search-server/search-server",
+      "program": "/Users/leonid-nenkin/Desktop/dev/С++/cpp-search-server/search-server/build/Debug/outDebug"
+    }
+  ]
+}
