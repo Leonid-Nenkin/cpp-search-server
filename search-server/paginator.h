@@ -51,13 +51,6 @@ private:
     vector<Page<Iterator>> _pages;
 };
 
-ostream& operator<<(ostream& output, Document document) {
-    output << "{ document_id = " << document.id << ", relevance = " << document.relevance
-           << ", rating = " << document.rating << " }";
-
-    return output;
-}
-
 template <typename Iterator>
 ostream& operator<<(ostream& output, Page<Iterator> page) {
     while (page.start_page != page.end_page){
